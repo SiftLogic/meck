@@ -24,8 +24,6 @@
 %% Exported to be accessible from generated modules.
 -export([exec/4]).
 
--include("meck.hrl").
-
 %%%============================================================================
 %%% Definitions
 %%%============================================================================
@@ -62,10 +60,10 @@ get_current_call() ->
 %%%============================================================================
 
 attribute({Key, _Value}, Attrs)
-    when Key =:= vsn;
-         Key =:= deprecated;
-         Key =:= optional_callbacks;
-     Key =:= dialyzer ->
+  when Key =:= vsn;
+       Key =:= deprecated;
+       Key =:= optional_callbacks;
+       Key =:= dialyzer ->
     Attrs;
 attribute({Key, Value}, Attrs)
   when (Key =:= behaviour orelse Key =:= behavior)
@@ -85,8 +83,8 @@ attributes(Mod) ->
 
 functions(Mod, Expects) ->
     dict:fold(fun(Export, Expect, {Exports, Functions}) ->
-        {[?attribute(export, [Export]) | Exports],
-         [func(Mod, Export, Expect) | Functions]}
+                      {[?attribute(export, [Export]) | Exports],
+                       [func(Mod, Export, Expect) | Functions]}
               end,
               {[], []},
               Expects).
@@ -115,20 +113,20 @@ func_native(Mod, Func, Arity, Result) ->
     Args = args(Arity),
     AbsResult = erl_parse:abstract(Result),
     ?function(
-            Func, Arity,
-            [?clause(
-                    Args,
-                    [?call(gen_server, cast,
-                           [?atom(meck_util:proc_name(Mod)),
-                            ?tuple([?atom(add_history),
-                                    ?tuple([?call(erlang, self, []),
-                                            ?tuple([?atom(Mod), ?atom(Func),
-                                                    list(Args)]),
-                                            AbsResult])])]),
-                     AbsResult])]).
+       Func, Arity,
+       [?clause(
+           Args,
+           [?call(gen_server, cast,
+                  [?atom(meck_util:proc_name(Mod)),
+                   ?tuple([?atom(add_history),
+                           ?tuple([?call(erlang, self, []),
+                                   ?tuple([?atom(Mod), ?atom(Func),
+                                           list(Args)]),
+                                   AbsResult])])]),
+            AbsResult])]).
 
 contains_opaque(Term) when is_pid(Term); is_port(Term); is_function(Term);
-    is_reference(Term) ->
+                           is_reference(Term) ->
     true;
 contains_opaque(Term) when is_list(Term) ->
     lists_any(fun contains_opaque/1, Term);
@@ -157,7 +155,7 @@ var_name(A) -> list_to_atom("A"++integer_to_list(A)).
 
 %% @hidden
 -spec exec(CallerPid::pid(), Mod::atom(), Func::atom(), Args::[any()]) ->
-        Result::any().
+          Result::any().
 exec(Pid, Mod, Func, Args) ->
     try meck_proc:get_result_spec(Mod, Func, Args) of
         undefined ->
@@ -180,9 +178,9 @@ eval(Pid, Mod, Func, Args, ResultSpec) ->
         meck_proc:add_history(Mod, Pid, Func, Args, Result),
         Result
     catch
-        ?_exception_(Class, Reason, StackToken) ->
+        Class:Reason:StackTrace ->
             handle_exception(Pid, Mod, Func, Args,
-                             Class, Reason, ?_get_stacktrace_(StackToken))
+                             Class, Reason, StackTrace)
     after
         put(?CURRENT_CALL, PreviousCall)
     end.
@@ -191,7 +189,7 @@ eval(Pid, Mod, Func, Args, ResultSpec) ->
                        Args::[any()], Class:: exit | error | throw,
                        Reason::any(),
                        Stack::meck_history:stack_trace()) ->
-        no_return().
+          no_return().
 handle_exception(Pid, Mod, Func, Args, Class, Reason, Stack) ->
     case meck_ret_spec:is_meck_exception(Reason) of
         {true, MockedClass, MockedReason} ->
@@ -203,7 +201,7 @@ handle_exception(Pid, Mod, Func, Args, Class, Reason, Stack) ->
 
 -spec raise(CallerPid::pid(), Mod::atom(), Func::atom(), Args::[any()],
             Class:: exit | error | throw, Reason::any(), Stack::meck_history:stack_trace()) ->
-        no_return().
+          no_return().
 raise(Pid, Mod, Func, Args, Class, Reason, Stack) ->
     StackTrace = inject(Mod, Func, Args, Stack),
     meck_proc:add_history_exception(Mod, Pid, Func, Args,
@@ -213,7 +211,7 @@ raise(Pid, Mod, Func, Args, Class, Reason, Stack) ->
 -dialyzer({no_match, inject/4}). % for meck_history:stack_trace in older Erlang/OTP versions
 -spec inject(Mod::atom(), Func::atom(), Args::[any()],
              meck_history:stack_trace()) ->
-        NewStackTrace::meck_history:stack_trace().
+          NewStackTrace::meck_history:stack_trace().
 inject(Mod, Func, Args, []) ->
     [{Mod, Func, Args}];
 inject(Mod, Func, Args, [{?MODULE, exec, _AriOrArgs, _Loc}|Stack]) ->
